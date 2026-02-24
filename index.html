@@ -61,13 +61,30 @@ function App() {
   const scale = zoom / 100;
 
   useEffect(() => {
+    let loaded = [];
     try {
       const saved = localStorage.getItem("sn-tickets");
-      if (saved) setTickets(JSON.parse(saved));
+      if (saved) loaded = JSON.parse(saved);
       if (localStorage.getItem("sn-darkmode") === "true") setDark(true);
       const z = localStorage.getItem("sn-zoom");
       if (z) setZoom(Number(z));
     } catch {}
+
+    // Handle ticket sent from browser extension via URL params
+    const params = new URLSearchParams(window.location.search);
+    const extTicket = params.get("ticket")?.trim().toUpperCase();
+    const extStatus = params.get("status");
+    if (extTicket && (extStatus === "Closed" || extStatus === "Chased")) {
+      window.history.replaceState({}, "", window.location.pathname);
+      const duplicate = loaded.find(t => t.number === extTicket);
+      if (!duplicate) {
+        const entry = { id: Date.now(), number: extTicket, status: extStatus, time: new Date().toISOString() };
+        loaded = [entry, ...loaded];
+        try { localStorage.setItem("sn-tickets", JSON.stringify(loaded)); } catch {}
+      }
+    }
+
+    setTickets(loaded);
     setLoading(false);
   }, []);
 
@@ -173,7 +190,7 @@ function App() {
           <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
             <span style={{fontSize:"12px", color:"rgba(255,255,255,0.7)", fontWeight:"500", whiteSpace:"nowrap"}}>A</span>
             <input
-              type="range" min="80" max="130" step="5" value={zoom}
+              type="range" min="50" max="200" step="5" value={zoom}
               onChange={handleZoom}
               style={{width:"80px", background:"rgba(255,255,255,0.25)", accentColor:"#fff"}}
             />
