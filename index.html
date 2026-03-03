@@ -1,85 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ticket Tracker - Supabase Sync</title>
-  <link rel="preconnect" href="https://unpkg.com">
-  <style>
-    :root{
-      --bg:#0b0f14; --card:#101826; --border:#243244; --text:#e5e7eb; --sub:#9ca3af;
-      --red:#dc2626; --blue:#2563eb; --green:#16a34a; --amber:#f59e0b;
-      --input:#0b1220;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
-    .topbar{position:sticky;top:0;z-index:10;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);
-      border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px}
-    .brand{font-weight:800;letter-spacing:.3px}
-    .tag{color:var(--sub);font-size:12px}
-    .spacer{flex:1}
-    .btn{border:1px solid var(--border);background:transparent;color:var(--text);padding:8px 10px;border-radius:8px;
-      cursor:pointer;font-weight:700;font-size:13px}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn.red{background:var(--red);border-color:var(--red)}
-    .btn.blue{background:var(--blue);border-color:var(--blue)}
-    .btn.green{background:var(--green);border-color:var(--green)}
-    .btn.ghost{background:transparent}
-    .wrap{max-width:980px;margin:0 auto;padding:18px 16px 36px}
-    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
-    .stat{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:92px}
-    .stat .num{font-size:36px;font-weight:900}
-    .stat .label{color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.9px}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:12px 12px;
-      color:var(--text);font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;outline:none}
-    .input:focus{border-color:#3b82f6}
-    .muted{color:var(--sub)}
-    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:12px;color:var(--sub)}
-    .ticketList{margin-top:10px}
-    .ticket{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);
-      border-radius:12px;background:rgba(255,255,255,.02);margin-bottom:8px}
-    .ticket .left{display:flex;align-items:center;gap:10px}
-    .badge{font-size:12px;font-weight:900;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
-    .badge.closed{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.45);color:#fecaca}
-    .badge.chased{background:rgba(37,99,235,.15);border-color:rgba(37,99,235,.45);color:#bfdbfe}
-    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-weight:800}
-    .small{font-size:12px;color:var(--sub)}
-    .tabs{display:flex;gap:8px;margin-top:10px}
-    .tab{padding:7px 10px;border-radius:10px;border:1px solid var(--border);cursor:pointer;font-size:13px}
-    .tab.active{background:rgba(255,255,255,.06)}
-    .err{color:#fca5a5;font-weight:800}
-    .ok{color:#86efac;font-weight:800}
-    .setupWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
-    .setup{max-width:620px;width:100%}
-    .setup h1{margin:0 0 6px 0}
-    .setup p{margin:0 0 14px 0;color:var(--sub);line-height:1.5}
-    .label{display:block;font-size:12px;color:var(--sub);font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin:10px 0 6px}
-    .hint{font-size:12px;color:var(--sub);line-height:1.5;margin-top:6px}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ticket Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;border:none}
+</style>
 </head>
 <body>
 <div id="root"></div>
-
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-
 <script type="text/babel">
-const { useEffect, useMemo, useRef, useState, useCallback } = React;
+const { useState, useEffect, useCallback } = React;
+const STATUS = { CLOSED: "Closed", CHASED: "Chased" };
+const GIST_FILENAME = "sn-tracker-data.json";
 
-const DEFAULT_SB_URL = "https://gehrxompqjktnhubfwbu.supabase.co";
-const DEFAULT_SB_KEY = "sb_publishable_8Tw2qXfWLhld8zmx4lphRA_GIH_7ZfN";
-
-// Capture extension parameters (ticket/status) if present
+// Capture extension parameters if present
 storePendingFromUrl();
+const GIST_DESC = "ServiceNow Ticket Tracker Data";
 
-// localStorage keys
-const LS_URL = "sn-sb-url";
-const LS_KEY = "sn-sb-key";
-const LS_TK  = "sn-sb-tracker";
+const LIGHT = {
+  red:"#d61726", bg:"#f4f4f4", card:"#ffffff", border:"#e0e0e0",
+  text:"#1a1a1a", textSub:"#666666",
+  closedBadge:"#d61726", closedBg:"#fdf0f1", closedText:"#a01020", closedBorder:"#f5c0c5",
+  chasedBadge:"#003057", chasedBg:"#eaf0f8", chasedText:"#002444", chasedBorder:"#b8cfe0",
+  filterActive:"#d61726", filterActiveTxt:"#ffffff",
+  filterInactive:"#f4f4f4", filterInactiveTxt:"#666666",
+  reportBg:"#f4f4f4", reportText:"#1a1a1a", footerText:"#999999",
+  inputBg:"#ffffff", setupBorder:"#e0e0e0",
+};
+const DARK = {
+  red:"#d61726", bg:"#0f0f0f", card:"#1a1a1a", border:"#2a2a2a",
+  text:"#f0f0f0", textSub:"#888888",
+  closedBadge:"#d61726", closedBg:"rgba(214,23,38,0.12)", closedText:"#f87171", closedBorder:"rgba(214,23,38,0.25)",
+  chasedBadge:"#003057", chasedBg:"rgba(0,48,87,0.25)", chasedText:"#7eb3d8", chasedBorder:"rgba(0,48,87,0.4)",
+  filterActive:"#d61726", filterActiveTxt:"#ffffff",
+  filterInactive:"#222222", filterInactiveTxt:"#888888",
+  reportBg:"#111111", reportText:"#4ade80", footerText:"#444444",
+  inputBg:"#111111", setupBorder:"#2a2a2a",
+};
 
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+// --- Gist API helpers ---
 function getUrlParams(){
   const u = new URL(window.location.href);
   return {
@@ -184,331 +157,489 @@ async function deleteToday(cfg){
   return sbFetch("DELETE", cfg.url, cfg.key, cfg.trackerKey, `/rest/v1/tickets?work_date=eq.${d}`);
 }
 
-function SetupScreen({ onConnected }){
-  const [url, setUrl] = useState(localStorage.getItem(LS_URL) || DEFAULT_SB_URL);
-  const [key, setKey] = useState(localStorage.getItem(LS_KEY) || DEFAULT_SB_KEY);
-  const [trackerKey, setTrackerKey] = useState(localStorage.getItem(LS_TK) || "default");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [pendingPreview] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem("sn-pending-ticket") || "null"); } catch { return null; }
+
+function utcDateISO() {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD in UTC
+}
+
+function mapRowsToTickets(rows) {
+  return (rows || []).map(r => ({
+    id: r.id || Date.now(),
+    number: String(r.ticket_number || r.number || "").toUpperCase(),
+    status: r.status,
+    time: r.created_at || r.time || new Date().toISOString()
+  }));
+}
   });
+  return data.id;
+}
 
-  const connect = async () => {
-    setErr("");
-    const cfg = { url: url.trim(), key: key.trim(), trackerKey: trackerKey.trim() };
-    if (!cfg.url) return setErr("Project URL is required.");
-    if (!cfg.key) return setErr("Publishable key is required.");
-    if (!cfg.trackerKey) return setErr("Tracker key is required.");
+// --- Setup Screen ---
+function SetupScreen({ onComplete, dark }) {
+  const C = dark ? DARK : LIGHT;
+  const [sbUrl, setSbUrl] = useState(localStorage.getItem("sn-sb-url") || "https://gehrxompqjktnhubfwbu.supabase.co");
+  const [sbKey, setSbKey] = useState(localStorage.getItem("sn-sb-key") || "sb_publishable_8Tw2qXfWLhld8zmx4lphRA_GIH_7ZfN");
+  const [trackerKey, setTrackerKey] = useState(localStorage.getItem("sn-sb-tracker") || "default");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    setLoading(true);
-    try{
-      // Validate: can read today's tickets (empty OK)
-      await loadToday(cfg);
+  const pendingPreview = useMemo(() => {
+    try { return JSON.parse(sessionStorage.getItem("sn-pending-ticket") || "null"); } catch { return null; }
+  }, []);
 
-      localStorage.setItem(LS_URL, cfg.url);
-      localStorage.setItem(LS_KEY, cfg.key);
-      localStorage.setItem(LS_TK, cfg.trackerKey);
+  const handleConnect = async () => {
+    const cfg = { url: sbUrl.trim(), key: sbKey.trim(), trackerKey: trackerKey.trim() };
+    if (!cfg.url) { setError("Please enter your Supabase Project URL."); return; }
+    if (!cfg.key) { setError("Please enter your Supabase Publishable key."); return; }
+    if (!cfg.trackerKey) { setError("Please enter a tracker key (shared passphrase)."); return; }
 
-      onConnected(cfg);
-    }catch(e){
-      setErr(String(e?.message || e));
-    }finally{
-      setLoading(false);
+    setLoading(true); setError("");
+    try {
+      const rows = await loadToday(cfg);
+      localStorage.setItem("sn-sb-url", cfg.url);
+      localStorage.setItem("sn-sb-key", cfg.key);
+      localStorage.setItem("sn-sb-tracker", cfg.trackerKey);
+      onComplete(cfg, mapRowsToTickets(rows || []));
+    } catch (e) {
+      setError(String(e && e.message ? e.message : e || "Could not connect to Supabase."));
     }
+    setLoading(false);
   };
 
   return (
-    <div className="setupWrap">
-      <div className="card setup">
-        <h1>Connect Ticket Tracker</h1>
-        <p>This version uses Supabase for cross-browser sync. Enter the values from Supabase and a tracker key (shared passphrase). Use the same tracker key in every browser.</p>
+    <div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.red}`,borderRadius:"4px",padding:"40px",maxWidth:"480px",width:"90%"}}>
+        <h1 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"6px"}}>Connect Ticket Tracker</h1>
+        <div style={{width:"40px",height:"2px",background:C.red,marginBottom:"20px"}}/>
+        <p style={{color:C.textSub,fontSize:"14px",marginBottom:"18px",lineHeight:1.6}}>
+          To sync your tickets across browsers, connect to Supabase. Use the same tracker key in every browser.
+        </p>
 
-        <div className="hint">
-          Supabase dashboard - Settings - Data API (Project URL) and Settings - API Keys (Publishable key).
-          <br/>Do not use secret keys in the website.
-        </div>
         {pendingPreview && pendingPreview.ticket && pendingPreview.status && (
-          <div style={{marginTop:12}} className="pill">
-            Pending from extension: <span className="code">{pendingPreview.ticket}</span> ({pendingPreview.status})
+          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"12px",marginBottom:"16px",fontSize:"13px",color:C.textSub,lineHeight:1.6}}>
+            Pending from extension: <strong style={{color:C.text}}>{pendingPreview.ticket}</strong> ({pendingPreview.status})
           </div>
         )}
 
-        <label className="label">Supabase Project URL</label>
-        <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxx.supabase.co" />
+        <label style={{display:"block",fontSize:"12px",color:C.textSub,fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>
+          Supabase Project URL
+        </label>
+        <input type="text" value={sbUrl} onChange={e => setSbUrl(e.target.value)}
+          style={{width:"100%",padding:"12px 14px",fontSize:"14px",fontFamily:"monospace",border:`1px solid ${C.border}`,borderRadius:"4px",background:C.inputBg,color:C.text,outline:"none",marginBottom:"12px"}} />
 
-        <label className="label">Supabase Publishable key</label>
-        <input className="input" type="password" value={key} onChange={e=>setKey(e.target.value)} placeholder="sb_publishable_..." />
+        <label style={{display:"block",fontSize:"12px",color:C.textSub,fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>
+          Supabase Publishable key
+        </label>
+        <input type="password" value={sbKey} onChange={e => setSbKey(e.target.value)}
+          style={{width:"100%",padding:"12px 14px",fontSize:"14px",fontFamily:"monospace",border:`1px solid ${C.border}`,borderRadius:"4px",background:C.inputBg,color:C.text,outline:"none",marginBottom:"12px"}} />
 
-        <label className="label">Tracker key (shared passphrase)</label>
-        <input className="input" type="password" value={trackerKey} onChange={e=>setTrackerKey(e.target.value)} placeholder="default (or any passphrase you chose)" onKeyDown={e=> e.key==="Enter" && connect()} />
-        <div className="hint">This must match your Supabase RLS policy: it compares header <span className="code">x-tracker-key</span> with column <span className="code">tracker_key</span>.</div>
+        <label style={{display:"block",fontSize:"12px",color:C.textSub,fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>
+          Tracker key (shared passphrase)
+        </label>
+        <input type="password" value={trackerKey} onChange={e => setTrackerKey(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleConnect()}
+          style={{width:"100%",padding:"12px 14px",fontSize:"14px",fontFamily:"monospace",border:`1px solid ${C.border}`,borderRadius:"4px",background:C.inputBg,color:C.text,outline:"none",marginBottom:"12px"}} />
 
-        {err && <div style={{marginTop:12}} className="err">{err}</div>}
+        {error && <p style={{color:"#ef4444",fontSize:"13px",marginBottom:"12px"}}>{error}</p>}
 
-        <div style={{marginTop:14}} className="row">
-          <button className="btn red" onClick={connect} disabled={loading}>{loading ? "Connecting..." : "Connect"}</button>
-          <button className="btn ghost" onClick={()=>{
-            localStorage.removeItem(LS_URL); localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_TK);
-            setUrl(DEFAULT_SB_URL); setKey(DEFAULT_SB_KEY); setTrackerKey("default");
-          }} disabled={loading}>Reset fields</button>
-        </div>
+        <button onClick={handleConnect} disabled={loading}
+          style={{width:"100%",background:C.red,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"700",cursor:loading?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:loading?0.7:1}}>
+          {loading ? "Connecting..." : "Connect"}
+        </button>
       </div>
     </div>
   );
 }
 
-function App(){
-  // If the extension opened this page with params, we stored them in sessionStorage already.
-  // Nothing else needed here.
 
-  const [cfg, setCfg] = useState(()=>{
-    const url = localStorage.getItem(LS_URL);
-    const key = localStorage.getItem(LS_KEY);
-    const trackerKey = localStorage.getItem(LS_TK);
-    if (url && key && trackerKey) return { url, key, trackerKey };
-    return null;
-  });
+// --- Main App ---
+function App() {
+  const [cfg, setCfg] = useState(null);
 
-  const [tickets, setTickets] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [input, setInput] = useState("");
-  const [syncState, setSyncState] = useState({ syncing:false, last:"", error:"" });
+  const onComplete = (cfg, initialTickets) => {
+    setCfg(cfg);
+    setTickets(initialTickets || []);
+    setLoading(false);
+  };
 
-  const counts = useMemo(()=>{
-    const closed = tickets.filter(t=> (t.status||"").toLowerCase()==="closed").length;
-    const chased = tickets.filter(t=> (t.status||"").toLowerCase()==="chased").length;
-    return { total: tickets.length, closed, chased };
-  }, [tickets]);
-
-  const shown = useMemo(()=>{
-    if (filter==="Closed") return tickets.filter(t=> (t.status||"").toLowerCase()==="closed");
-    if (filter==="Chased") return tickets.filter(t=> (t.status||"").toLowerCase()==="chased");
-    return tickets;
-  }, [tickets, filter]);
-
-  const refresh = useCallback(async ()=>{
-    if (!cfg) return;
-    setSyncState(s=>({ ...s, syncing:true, error:"" }));
-    try{
-      const remote = await loadToday(cfg);
-      // Map supabase rows -> UI objects
-      const mapped = (remote || []).map(r=>({
-        id: r.id,
-        number: String(r.ticket_number||"").toUpperCase(),
-        status: r.status,
-        time: r.created_at || nowISO()
-      }));
-      setTickets(mapped);
-      setSyncState(s=>({ ...s, syncing:false, last: nowISO(), error:"" }));
-    }catch(e){
-      setSyncState(s=>({ ...s, syncing:false, error: String(e?.message || e) }));
+  useEffect(() => {
+    const url = localStorage.getItem("sn-sb-url");
+    const key = localStorage.getItem("sn-sb-key");
+    const trackerKey = localStorage.getItem("sn-sb-tracker");
+    if (url && key && trackerKey && !cfg) {
+      setCfg({ url, key, trackerKey });
     }
-  }, [cfg]);
+  }, []);
 
-  useEffect(()=>{ 
-    if(cfg) {
-      refresh().then(async ()=>{
-        const pending = consumePending();
-        if (pending && pending.ticket && pending.status) {
-          try{
-            await insertTicket(cfg, pending.ticket, pending.status);
-          }catch(e){
-            // If insert fails, keep going
+
+  const [tickets, setTickets]             = useState([]);
+  const [input, setInput]                 = useState("");
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [filter, setFilter]               = useState("All");
+  const [showReport, setShowReport]       = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [syncing, setSyncing]             = useState(false);
+  const [syncError, setSyncError]         = useState("");
+  const [toast, setToast]                 = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [dark, setDark]                   = useState(false);
+  const [zoom, setZoom]                   = useState(100);
+  const [ghToken, setGhToken]             = useState(null);
+  const [ghGist, setGhGist]               = useState(null);
+  const [setupDone, setSetupDone]         = useState(false);
+
+  const C = dark ? DARK : LIGHT;
+  const scale = zoom / 100;
+
+  // Load credentials and data on mount
+  useEffect(() => {
+    const token = localStorage.getItem("sn-sb-key");
+    const gist  = localStorage.getItem("sn-sb-url");
+    if (localStorage.getItem("sn-darkmode") === "true") setDark(true);
+    const z = localStorage.getItem("sn-zoom");
+    if (z) setZoom(Number(z));
+
+    if (!token || !gist) { setLoading(false); return; }
+
+    setGhToken(token); setGhGist(gist); setSetupDone(true);
+
+    // Handle URL params from extension
+    const params = new URLSearchParams(window.location.search);
+    const extTicket = params.get("ticket")?.trim().toUpperCase();
+    const extStatus = params.get("status");
+    window.history.replaceState({}, "", window.location.pathname);
+
+    setSyncing(true);
+    loadFromGist(token, gist)
+      .then(loaded => {
+        let updated = loaded;
+        if (extTicket && (extStatus === "Closed" || extStatus === "Chased")) {
+          if (!loaded.find(t => t.number === extTicket)) {
+            const entry = { id: Date.now(), number: extTicket, status: extStatus, time: new Date().toISOString() };
+            updated = [entry, ...loaded];
+            return saveToGist(token, gist, updated).then(() => updated);
           }
-          await refresh();
         }
-      });
-    }
-  }, [cfg, refresh]);
+        return updated;
+      })
+      .then(data => { setTickets(data); setSyncing(false); setLoading(false); })
+      .catch(() => { setSyncError("Could not load data from GitHub. Check your connection."); setSyncing(false); setLoading(false); });
+  }, []);
 
-  useEffect(()=>{
-    if(!cfg) return;
-    const id = setInterval(()=>refresh(), 30000);
-    return ()=>clearInterval(id);
-  }, [cfg, refresh]);
+  const toggleDark = () => {
+    const next = !dark; setDark(next);
+    try { localStorage.setItem("sn-darkmode", String(next)); } catch {}
+  };
 
-  const add = async (status) => {
+  const handleZoom = e => {
+    const val = Number(e.target.value); setZoom(val);
+    try { localStorage.setItem("sn-zoom", String(val)); } catch {}
+  };
+
+  const showToast = (msg, color) => {
+    setToast({ msg, color: color || C.text });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  // Save to Gist and update state
+  const save = useCallback(async (updated) => { setTickets(updated); }, []);
+
+  const addTicket = status => {
     const num = input.trim().toUpperCase();
+    if (!num) { setPendingStatus(status); return; }
+    submitTicket(num, status);
+  };
+
+  const submitTicket = (num, status) => {
     if (!num) return;
-
-    // Prevent duplicates in UI (still allowed in DB; this is just convenience)
-    if (tickets.some(t => t.number === num)){
-      setSyncState(s=>({ ...s, error: `${num} already logged.` }));
-      setInput("");
-      return;
+    const existing = tickets.find(t => t.number === num);
+    if (existing) {
+      showToast(`⚠️ ${num} already logged as ${existing.status}`, "#92400e");
+      setInput(""); setPendingStatus(null); return;
     }
+    const entry = { id: Date.now(), number: num, status, time: new Date().toISOString() };
+    save([entry, ...tickets]);
 
-    // optimistic UI
-    const optimistic = [{ id: "local-"+Date.now(), number: num, status, time: nowISO() }, ...tickets];
-    setTickets(optimistic);
-    setInput("");
-
-    setSyncState(s=>({ ...s, syncing:true, error:"" }));
-    try{
-      await insertTicket(cfg, num, status);
-      await refresh();
-    }catch(e){
-      setSyncState(s=>({ ...s, syncing:false, error: String(e?.message || e) }));
-    }
+    if (cfg) {
+      insertTicket(cfg, num, status)
+        .then(() => loadToday(cfg).then(rows => setTickets(mapRowsToTickets(rows || []))))
+        .catch(() => setSyncError("Sync failed - changes may not be saved."));
+    }setInput(""); setPendingStatus(null);
+    showToast(`✓ ${num} marked as ${status}`, status === STATUS.CLOSED ? C.closedBadge : C.chasedBadge);
   };
 
-  const resetDay = async () => {
-    if (!confirm("Reset today? This clears the list. If your Supabase DELETE policy exists, it will also delete today's rows.")) return;
-    setTickets([]);
-    if (!cfg) return;
-
-    setSyncState(s=>({ ...s, syncing:true, error:"" }));
-    try{
-      await deleteToday(cfg);
-    }catch(e){
-      // If DELETE policy not configured, show warning but keep running
-      setSyncState(s=>({ ...s, error: "Could not delete rows (DELETE policy likely missing). Local list cleared." }));
-    }finally{
-      await refresh();
-    }
+  const handleKey = e => {
+    if (e.key === "Enter" && pendingStatus) submitTicket(input.trim().toUpperCase(), pendingStatus);
+    else if (e.key === "Enter" && input.trim()) addTicket(pendingStatus || STATUS.CLOSED);
   };
 
-  const disconnect = () => {
-    localStorage.removeItem(LS_URL);
-    localStorage.removeItem(LS_KEY);
-    localStorage.removeItem(LS_TK);
-    setCfg(null);
-    setTickets([]);
-    setSyncState({ syncing:false, last:"", error:"" });
+  const removeTicket = id => save(tickets.filter(t => t.id !== id));
+
+  const handleReset = () => {
+    save([]); setShowReport(false); setShowResetConfirm(false);
+    showToast("Tracker reset — clean slate!", C.red);
   };
 
-  const endOfDayReport = useMemo(()=>{
-    const d = new Date();
-    const dateLine = d.toLocaleDateString(undefined, { weekday:"long", year:"numeric", month:"long", day:"numeric" });
-    const lines = [
-      `End of Day Report - ${dateLine}`,
-      `Total processed: ${counts.total}`,
-      `Closed: ${counts.closed}`,
-      `Chased: ${counts.chased}`,
-      "",
-      "Tickets:"
-    ];
-    for (const t of tickets.slice().reverse()){
-      lines.push(`- ${t.number} - ${t.status} - ${prettyTime(t.time)}`);
-    }
-    return lines.join("\n");
-  }, [tickets, counts]);
-
-  const copyReport = async () => {
-    try{
-      await navigator.clipboard.writeText(endOfDayReport);
-      setSyncState(s=>({ ...s, error:"", last: s.last }));
-    }catch(e){
-      setSyncState(s=>({ ...s, error:"Copy failed (clipboard permission)." }));
-    }
+  const handleDisconnect = () => {
+    localStorage.removeItem("sn-sb-url");
+    localStorage.removeItem("sn-sb-key");
+    localStorage.removeItem("sn-sb-tracker");
+    
+    window.location.reload();
   };
 
-  const exportTxt = () => {
-    const blob = new Blob([endOfDayReport], { type:"text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+  const closed   = tickets.filter(t => t.status === STATUS.CLOSED);
+  const chased   = tickets.filter(t => t.status === STATUS.CHASED);
+  const filtered = filter === "All" ? tickets : tickets.filter(t => t.status === filter);
+
+  const reportText = () => {
+    const date      = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+    const generated = formatDateTime(new Date().toISOString());
+    let txt = `Daily Ticket Report – ${date}\n`;
+    txt += `Generated        : ${generated}\n`;
+    txt += `${"─".repeat(44)}\n`;
+    txt += `Total Processed  : ${tickets.length}\n`;
+    txt += `Closed           : ${closed.length}\n`;
+    txt += `Chased           : ${chased.length}\n`;
+    if (closed.length) { txt += `\nClosed Tickets:\n`; closed.forEach(t => txt += `  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
+    if (chased.length) { txt += `\nChased Tickets:\n`; chased.forEach(t => txt += `  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
+    return txt;
+  };
+
+  const copyReport  = () => { navigator.clipboard.writeText(reportText()); showToast("Report copied to clipboard!"); };
+  const exportTxt   = () => {
+    const blob = new Blob([reportText()], { type: "text/plain" });
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `ticket-report-${utcDateISO()}.txt`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `ticket-report-${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
-  if (!cfg){
-    return <SetupScreen onConnected={setCfg} />;
+  // Setup screen
+  if (!loading && !setupDone) {
+    return <SetupScreen dark={dark} onComplete={(cfg, initialTickets) => { setCfg(cfg); setTickets(initialTickets || []); }} />;
   }
 
+  if (loading) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f4f4f4",color:"#666",fontSize:"16px",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+      Loading...
+    </div>
+  );
+
   return (
-    <>
-      <div className="topbar">
-        <div>
-          <div className="brand">Ticket Tracker</div>
-          <div className="tag">Supabase sync</div>
+    <div style={{background:C.bg, minHeight:"100vh", fontFamily:"'IBM Plex Sans',sans-serif", transition:"background 0.2s"}}>
+
+      {/* Top bar */}
+      <div style={{background:C.red, padding:"12px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px"}}>
+        <div style={{display:"flex", alignItems:"center", gap:"12px", flexShrink:0}}>
+          <span style={{color:"#fff", fontSize:"18px", fontWeight:"700"}}>Ticket Tracker</span>
+          <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.3)"}}/>
+          <span style={{color:"rgba(255,255,255,0.85)", fontSize:"13px"}}>IT Service Management</span>
         </div>
-        <span className="pill">Date: <span className="code">{utcDateISO()}</span></span>
-        <span className="pill">Tracker key: <span className="code">{cfg.trackerKey}</span></span>
-        <div className="spacer" />
-        <button className="btn" onClick={refresh} disabled={syncState.syncing}>{syncState.syncing ? "Syncing..." : "Refresh"}</button>
-        <button className="btn" onClick={resetDay}>Reset Day</button>
-        <button className="btn ghost" onClick={disconnect}>Disconnect</button>
+
+        <div style={{display:"flex", alignItems:"center", gap:"20px"}}>
+          {/* Zoom slider */}
+          <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
+            <span style={{fontSize:"12px", color:"rgba(255,255,255,0.7)", fontWeight:"500", whiteSpace:"nowrap"}}>A</span>
+            <input type="range" min="50" max="200" step="5" value={zoom} onChange={handleZoom}
+              style={{width:"80px", background:"rgba(255,255,255,0.25)", accentColor:"#fff"}}/>
+            <span style={{fontSize:"15px", color:"rgba(255,255,255,0.7)", fontWeight:"600", whiteSpace:"nowrap"}}>A</span>
+            <span style={{fontSize:"11px", color:"rgba(255,255,255,0.5)", minWidth:"32px"}}>{zoom}%</span>
+          </div>
+
+          <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
+
+          {/* Sync status */}
+          <span style={{fontSize:"12px", color: syncing ? "rgba(255,255,255,0.6)" : syncError ? "#fca5a5" : "rgba(255,255,255,0.5)", whiteSpace:"nowrap"}}>
+            {syncing ? "Syncing..." : syncError ? "Sync error" : "Synced"}
+          </span>
+
+          <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
+
+          {/* Dark mode toggle */}
+          <div onClick={toggleDark} style={{display:"flex", alignItems:"center", gap:"8px", cursor:"pointer"}}>
+            <span style={{fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:"500"}}>{dark ? "Dark" : "Light"}</span>
+            <div style={{width:"44px",height:"24px",borderRadius:"12px",background:dark?"rgba(255,255,255,0.9)":"rgba(0,0,0,0.25)",border:"1px solid rgba(255,255,255,0.4)",position:"relative",transition:"background 0.3s",cursor:"pointer"}}>
+              <div style={{width:"18px",height:"18px",borderRadius:"50%",background:dark?"#d61726":"#ffffff",position:"absolute",top:"2px",left:dark?"22px":"2px",transition:"left 0.25s ease, background 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
+            </div>
+          </div>
+
+          <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
+
+          <button onClick={() => setShowResetConfirm(true)}
+            style={{background:"rgba(0,0,0,0.2)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",fontSize:"13px",padding:"7px 16px",borderRadius:"4px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif",flexShrink:0}}>
+            Reset Day
+          </button>
+        </div>
       </div>
 
-      <div className="wrap">
-        <div className="grid3">
-          <div className="card stat">
-            <div className="num">{counts.total}</div>
-            <div className="label">Total processed</div>
-          </div>
-          <div className="card stat">
-            <div className="num" style={{color:"#fecaca"}}>{counts.closed}</div>
-            <div className="label">Closed</div>
-          </div>
-          <div className="card stat">
-            <div className="num" style={{color:"#bfdbfe"}}>{counts.chased}</div>
-            <div className="label">Chased</div>
+      {/* Toast */}
+      {toast && (
+        <div style={{position:"fixed",top:"20px",left:"50%",transform:"translateX(-50%)",background:toast.color,color:"#fff",padding:"10px 24px",borderRadius:"4px",fontSize:"14px",fontWeight:"600",zIndex:999,boxShadow:"0 4px 16px rgba(0,0,0,0.25)"}}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Reset Modal */}
+      {showResetConfirm && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+          <div style={{background:C.card,borderRadius:"4px",padding:"32px",maxWidth:"420px",width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
+            <h2 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"8px"}}>Reset Tracker?</h2>
+            <div style={{width:"40px",height:"3px",background:C.red,marginBottom:"16px"}}/>
+            <p style={{color:C.textSub,fontSize:"15px",marginBottom:"24px"}}>This will permanently clear all {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} from all browsers. This cannot be undone.</p>
+            <div style={{display:"flex",gap:"12px"}}>
+              <button onClick={() => setShowResetConfirm(false)}
+                style={{flex:1,background:C.border,color:C.text,border:"none",borderRadius:"4px",padding:"12px",fontSize:"15px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>Cancel</button>
+              <button onClick={handleReset}
+                style={{flex:1,background:C.red,color:"#fff",border:"none",borderRadius:"4px",padding:"12px",fontSize:"15px",fontWeight:"700",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>Yes, Reset</button>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="card" style={{marginTop:12}}>
-          <div className="row" style={{marginBottom:10}}>
-            <div style={{flex:"1 1 340px"}}>
-              <div className="small" style={{marginBottom:6,fontWeight:800,letterSpacing:.7,textTransform:"uppercase"}}>Ticket number</div>
-              <input className="input" value={input} onChange={e=>setInput(e.target.value)} placeholder="e.g. INC0012345" />
-            </div>
-            <div className="row">
-              <button className="btn red" onClick={()=>add("Closed")} disabled={syncState.syncing}>Mark as Closed</button>
-              <button className="btn blue" onClick={()=>add("Chased")} disabled={syncState.syncing}>Mark as Chased</button>
-            </div>
+      {/* Scalable content */}
+      <div style={{transformOrigin:"top center", transform:`scale(${scale})`, transition:"transform 0.2s"}}>
+        <div style={{maxWidth:"720px", margin:"0 auto", padding:"32px 20px"}}>
+
+          <div style={{marginBottom:"28px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+            <p style={{color:C.textSub, fontSize:"14px"}}>
+              {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+            </p>
+            <button onClick={handleDisconnect}
+              style={{background:"none",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"5px 12px",fontSize:"12px",color:C.textSub,cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+              Disconnect Supabase
+            </button>
           </div>
 
-          <div className="tabs">
-            {["All","Closed","Chased"].map(t=>(
-              <div key={t} className={"tab "+(filter===t?"active":"")} onClick={()=>setFilter(t)}>{t}</div>
-            ))}
-            <div className="spacer" />
-            <div className="small">{shown.length} ticket(s)</div>
-          </div>
+          {/* Sync error banner */}
+          {syncError && (
+            <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:"4px",padding:"12px 16px",marginBottom:"16px",fontSize:"13px",color:"#991b1b"}}>
+              {syncError}
+            </div>
+          )}
 
-          <div className="ticketList">
-            {shown.length===0 ? (
-              <div className="muted" style={{padding:"16px 4px"}}>No tickets logged yet - add your first one above.</div>
-            ) : shown.map(t=>(
-              <div className="ticket" key={t.id}>
-                <div className="left">
-                  <span className={"badge "+((t.status||"").toLowerCase()==="closed"?"closed":"chased")}>{(t.status||"").toUpperCase()}</span>
-                  <span className="code">{t.number}</span>
-                </div>
-                <div className="small">{prettyTime(t.time)}</div>
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"16px",marginBottom:"20px"}}>
+            {[
+              {label:"Total Processed", count:tickets.length, accent:C.text},
+              {label:"Closed",          count:closed.length,  accent:C.closedBadge},
+              {label:"Chased",          count:chased.length,  accent:C.chasedBadge},
+            ].map(s => (
+              <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${s.accent}`,borderRadius:"4px",padding:"20px",textAlign:"center",transition:"background 0.2s"}}>
+                <div style={{fontSize:"40px",fontWeight:"700",color:s.accent,lineHeight:1}}>{s.count}</div>
+                <div style={{fontSize:"12px",color:C.textSub,marginTop:"6px",fontWeight:"500"}}>{s.label}</div>
               </div>
             ))}
           </div>
-        </div>
 
-        <div className="card" style={{marginTop:12}}>
-          <div className="row" style={{justifyContent:"space-between"}}>
-            <div>
-              <div style={{fontWeight:900}}>End of Day Report</div>
-              <div className="small">Includes today's tickets (UTC date).</div>
-            </div>
-            <div className="row">
-              <button className="btn" onClick={copyReport}>Copy</button>
-              <button className="btn" onClick={exportTxt}>Export .txt</button>
-            </div>
-          </div>
-          <pre style={{marginTop:12,whiteSpace:"pre-wrap",background:"rgba(0,0,0,.25)",border:"1px solid var(--border)",borderRadius:12,padding:12,color:"var(--text)",fontSize:12}}>
-{endOfDayReport}
-          </pre>
-
-          <div style={{marginTop:10}}>
-            {syncState.error ? <div className="err">{syncState.error}</div> : (
-              <div className="small">
-                {syncState.last ? <>Last sync: {prettyTime(syncState.last)}</> : "Not synced yet."}
-              </div>
+          {/* Input */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",marginBottom:"16px",transition:"background 0.2s"}}>
+            <label style={{display:"block",fontSize:"13px",color:C.textSub,marginBottom:"8px",fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px"}}>Ticket Number</label>
+            <input
+              style={{width:"100%",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"12px 14px",fontSize:"15px",fontFamily:"'IBM Plex Sans',monospace",color:C.text,outline:"none",marginBottom:"14px",background:C.bg,transition:"background 0.2s, color 0.2s"}}
+              placeholder="e.g. INC0012345"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              onFocus={e => e.target.style.borderColor = C.red}
+              onBlur={e => e.target.style.borderColor = C.border}
+            />
+            {pendingStatus && !input.trim() && (
+              <p style={{fontSize:"13px",color:"#b45309",marginBottom:"12px",fontWeight:"500"}}>⚠️ Enter a ticket number above, then click the button again</p>
             )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+              <button onClick={() => addTicket(STATUS.CLOSED)} disabled={syncing}
+                style={{background:C.closedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:syncing?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:syncing?0.7:1}}>
+                Mark as Closed
+              </button>
+              <button onClick={() => addTicket(STATUS.CHASED)} disabled={syncing}
+                style={{background:C.chasedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:syncing?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:syncing?0.7:1}}>
+                Mark as Chased
+              </button>
+            </div>
           </div>
+
+          {/* Ticket List */}
+          {tickets.length > 0 && (
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",marginBottom:"16px",transition:"background 0.2s"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+                <div style={{display:"flex",gap:"8px"}}>
+                  {["All","Closed","Chased"].map(f => (
+                    <button key={f} onClick={() => setFilter(f)}
+                      style={{background:filter===f?C.filterActive:C.filterInactive,color:filter===f?C.filterActiveTxt:C.filterInactiveTxt,border:`1px solid ${filter===f?C.filterActive:C.border}`,borderRadius:"4px",padding:"6px 16px",fontSize:"13px",fontWeight:"600",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <span style={{fontSize:"13px",color:C.textSub}}>{filtered.length} ticket{filtered.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:"8px",maxHeight:"320px",overflowY:"auto"}}>
+                {filtered.map(t => {
+                  const isC = t.status === STATUS.CLOSED;
+                  return (
+                    <div key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:isC?C.closedBg:C.chasedBg,border:`1px solid ${isC?C.closedBorder:C.chasedBorder}`,borderRadius:"4px",padding:"12px 14px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+                        <span style={{background:isC?C.closedBadge:C.chasedBadge,color:"#fff",fontSize:"11px",fontWeight:"700",padding:"3px 10px",borderRadius:"3px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{t.status}</span>
+                        <span style={{fontFamily:"monospace",fontWeight:"700",fontSize:"15px",color:isC?C.closedText:C.chasedText}}>{t.number}</span>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+                        <span style={{fontSize:"12px",color:C.textSub}}>{formatDateTime(t.time)}</span>
+                        <button onClick={() => removeTicket(t.id)}
+                          style={{background:"none",border:"none",color:C.border,cursor:"pointer",fontSize:"16px",padding:"0 2px",lineHeight:1}}
+                          onMouseEnter={e => e.target.style.color = C.red}
+                          onMouseLeave={e => e.target.style.color = C.border}>✕</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Report */}
+          {tickets.length > 0 && (
+            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",transition:"background 0.2s"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+                <div>
+                  <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700"}}>End of Day Report</h2>
+                  <div style={{width:"32px",height:"2px",background:C.red,marginTop:"4px"}}/>
+                </div>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <button onClick={() => setShowReport(!showReport)}
+                    style={{background:C.bg,color:C.textSub,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"7px 14px",fontSize:"13px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+                    {showReport ? "Hide" : "Preview"}
+                  </button>
+                  <button onClick={copyReport}
+                    style={{background:C.bg,color:C.text,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"7px 14px",fontSize:"13px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+                    Copy
+                  </button>
+                  <button onClick={exportTxt}
+                    style={{background:C.red,color:"#fff",border:"none",borderRadius:"4px",padding:"7px 16px",fontSize:"13px",cursor:"pointer",fontWeight:"600",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+                    Export .txt
+                  </button>
+                </div>
+              </div>
+              {showReport && (
+                <pre style={{background:C.reportBg,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"16px",fontSize:"13px",color:C.reportText,fontFamily:"monospace",whiteSpace:"pre-wrap"}}>
+                  {reportText()}
+                </pre>
+              )}
+            </div>
+          )}
+
+          {tickets.length === 0 && (
+            <div style={{textAlign:"center",color:C.textSub,fontSize:"15px",padding:"60px 0",background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px"}}>
+              No tickets logged yet — add your first one above.
+            </div>
+          )}
+
+          <div style={{textAlign:"center",marginTop:"24px",paddingTop:"16px",borderTop:`1px solid ${C.border}`}}>
+            <span style={{fontSize:"12px",color:C.footerText}}>IT Service Management — Ticket Tracker</span>
+          </div>
+
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
