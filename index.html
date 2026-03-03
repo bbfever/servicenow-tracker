@@ -48,7 +48,6 @@ const SB_LS_URL = "sn-sb-url";
 const SB_LS_KEY = "sn-sb-key";
 const SB_LS_TRACKER = "sn-sb-tracker";
 
-// Default tracker key used by your RLS policies unless you changed it
 function getSbCfg() {
   return {
     url: (localStorage.getItem(SB_LS_URL) || SB_DEFAULT_URL).trim(),
@@ -198,10 +197,6 @@ function App() {
       setLoading(false);
     })();
   }, []);
-setLoading(false);
-    })();
-  }, []);
-
 
   useEffect(() => {
     if (loading) return;
