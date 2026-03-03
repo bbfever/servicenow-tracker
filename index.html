@@ -54,13 +54,25 @@ async function gistFetch(method, path, token, body) {
   const res = await fetch("https://api.github.com" + path, {
     method,
     headers: {
-      "Authorization": "token " + token,
+      "Authorization": "Bearer " + token,
       "Accept": "application/vnd.github+json",
       "Content-Type": "application/json",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error("GitHub API error: " + res.status);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        const j = await res.json();
+        detail = j && (j.message || JSON.stringify(j));
+      } else {
+        detail = await res.text();
+      }
+    } catch {}
+    throw new Error(`GitHub API error: ${res.status}${detail ? " - " + detail : ""}`);
+  }
   return res.json();
 }
 
@@ -101,8 +113,8 @@ function SetupScreen({ onComplete, dark }) {
       localStorage.setItem("sn-gh-token", t);
       localStorage.setItem("sn-gh-gist", gistId);
       onComplete(t, gistId, []);
-    } catch {
-      setError("Could not connect. Check your token has Gist permission and try again.");
+    } catch (e) {
+      setError(String(e && e.message ? e.message : e || "Could not connect. Check your token has Gist permission and try again."));
     }
     setLoading(false);
   };
