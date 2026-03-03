@@ -19,8 +19,10 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect } = React;
+const { useState, useEffect, useCallback } = React;
 const STATUS = { CLOSED: "Closed", CHASED: "Chased" };
+const GIST_FILENAME = "sn-tracker-data.json";
+const GIST_DESC = "ServiceNow Ticket Tracker Data";
 
 const LIGHT = {
   red:"#d61726", bg:"#f4f4f4", card:"#ffffff", border:"#e0e0e0",
@@ -30,6 +32,7 @@ const LIGHT = {
   filterActive:"#d61726", filterActiveTxt:"#ffffff",
   filterInactive:"#f4f4f4", filterInactiveTxt:"#666666",
   reportBg:"#f4f4f4", reportText:"#1a1a1a", footerText:"#999999",
+  inputBg:"#ffffff", setupBorder:"#e0e0e0",
 };
 const DARK = {
   red:"#d61726", bg:"#0f0f0f", card:"#1a1a1a", border:"#2a2a2a",
@@ -39,53 +42,164 @@ const DARK = {
   filterActive:"#d61726", filterActiveTxt:"#ffffff",
   filterInactive:"#222222", filterInactiveTxt:"#888888",
   reportBg:"#111111", reportText:"#4ade80", footerText:"#444444",
+  inputBg:"#111111", setupBorder:"#2a2a2a",
 };
 
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
 }
 
+// --- Gist API helpers ---
+async function gistFetch(method, path, token, body) {
+  const res = await fetch("https://api.github.com" + path, {
+    method,
+    headers: {
+      "Authorization": "token " + token,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error("GitHub API error: " + res.status);
+  return res.json();
+}
+
+async function loadFromGist(token, gistId) {
+  const data = await gistFetch("GET", "/gists/" + gistId, token);
+  const content = data.files[GIST_FILENAME]?.content;
+  return content ? JSON.parse(content) : [];
+}
+
+async function saveToGist(token, gistId, tickets) {
+  await gistFetch("PATCH", "/gists/" + gistId, token, {
+    files: { [GIST_FILENAME]: { content: JSON.stringify(tickets) } }
+  });
+}
+
+async function createGist(token) {
+  const data = await gistFetch("POST", "/gists", token, {
+    description: GIST_DESC,
+    public: false,
+    files: { [GIST_FILENAME]: { content: "[]" } }
+  });
+  return data.id;
+}
+
+// --- Setup Screen ---
+function SetupScreen({ onComplete, dark }) {
+  const C = dark ? DARK : LIGHT;
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleConnect = async () => {
+    const t = token.trim();
+    if (!t) { setError("Please enter your token."); return; }
+    setLoading(true); setError("");
+    try {
+      const gistId = await createGist(t);
+      localStorage.setItem("sn-gh-token", t);
+      localStorage.setItem("sn-gh-gist", gistId);
+      onComplete(t, gistId, []);
+    } catch {
+      setError("Could not connect. Check your token has Gist permission and try again.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{background:C.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${C.red}`,borderRadius:"4px",padding:"40px",maxWidth:"480px",width:"90%"}}>
+        <h1 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"6px"}}>Connect Ticket Tracker</h1>
+        <div style={{width:"40px",height:"2px",background:C.red,marginBottom:"20px"}}/>
+        <p style={{color:C.textSub,fontSize:"14px",marginBottom:"24px",lineHeight:1.6}}>
+          To sync your tickets across all browsers, connect your GitHub account using a Personal Access Token.
+          Your data is stored privately in a GitHub Gist only you can access.
+        </p>
+
+        <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"16px",marginBottom:"20px",fontSize:"13px",color:C.textSub,lineHeight:1.8}}>
+          <strong style={{color:C.text}}>How to get your token:</strong><br/>
+          1. Go to github.com → Settings<br/>
+          2. Developer settings → Personal access tokens → Tokens (classic)<br/>
+          3. Generate new token → tick <strong style={{color:C.text}}>gist</strong> scope only<br/>
+          4. Copy and paste it below
+        </div>
+
+        <label style={{display:"block",fontSize:"12px",color:C.textSub,fontWeight:"600",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>
+          GitHub Personal Access Token
+        </label>
+        <input
+          type="password"
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          value={token}
+          onChange={e => setToken(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleConnect()}
+          style={{width:"100%",padding:"12px 14px",fontSize:"14px",fontFamily:"monospace",border:`1px solid ${C.border}`,borderRadius:"4px",background:C.inputBg,color:C.text,outline:"none",marginBottom:"12px"}}
+        />
+        {error && <p style={{color:"#ef4444",fontSize:"13px",marginBottom:"12px"}}>{error}</p>}
+        <button onClick={handleConnect} disabled={loading}
+          style={{width:"100%",background:C.red,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"700",cursor:loading?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:loading?0.7:1}}>
+          {loading ? "Connecting..." : "Connect & Create Gist"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// --- Main App ---
 function App() {
-  const [tickets, setTickets] = useState([]);
-  const [input, setInput] = useState("");
+  const [tickets, setTickets]             = useState([]);
+  const [input, setInput]                 = useState("");
   const [pendingStatus, setPendingStatus] = useState(null);
-  const [filter, setFilter] = useState("All");
-  const [showReport, setShowReport] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState(null);
+  const [filter, setFilter]               = useState("All");
+  const [showReport, setShowReport]       = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [syncing, setSyncing]             = useState(false);
+  const [syncError, setSyncError]         = useState("");
+  const [toast, setToast]                 = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [dark, setDark] = useState(false);
-  const [zoom, setZoom] = useState(100);
+  const [dark, setDark]                   = useState(false);
+  const [zoom, setZoom]                   = useState(100);
+  const [ghToken, setGhToken]             = useState(null);
+  const [ghGist, setGhGist]               = useState(null);
+  const [setupDone, setSetupDone]         = useState(false);
 
   const C = dark ? DARK : LIGHT;
   const scale = zoom / 100;
 
+  // Load credentials and data on mount
   useEffect(() => {
-    let loaded = [];
-    try {
-      const saved = localStorage.getItem("sn-tickets");
-      if (saved) loaded = JSON.parse(saved);
-      if (localStorage.getItem("sn-darkmode") === "true") setDark(true);
-      const z = localStorage.getItem("sn-zoom");
-      if (z) setZoom(Number(z));
-    } catch {}
+    const token = localStorage.getItem("sn-gh-token");
+    const gist  = localStorage.getItem("sn-gh-gist");
+    if (localStorage.getItem("sn-darkmode") === "true") setDark(true);
+    const z = localStorage.getItem("sn-zoom");
+    if (z) setZoom(Number(z));
 
-    // Handle ticket sent from browser extension via URL params
+    if (!token || !gist) { setLoading(false); return; }
+
+    setGhToken(token); setGhGist(gist); setSetupDone(true);
+
+    // Handle URL params from extension
     const params = new URLSearchParams(window.location.search);
     const extTicket = params.get("ticket")?.trim().toUpperCase();
     const extStatus = params.get("status");
-    if (extTicket && (extStatus === "Closed" || extStatus === "Chased")) {
-      window.history.replaceState({}, "", window.location.pathname);
-      const duplicate = loaded.find(t => t.number === extTicket);
-      if (!duplicate) {
-        const entry = { id: Date.now(), number: extTicket, status: extStatus, time: new Date().toISOString() };
-        loaded = [entry, ...loaded];
-        try { localStorage.setItem("sn-tickets", JSON.stringify(loaded)); } catch {}
-      }
-    }
+    window.history.replaceState({}, "", window.location.pathname);
 
-    setTickets(loaded);
-    setLoading(false);
+    setSyncing(true);
+    loadFromGist(token, gist)
+      .then(loaded => {
+        let updated = loaded;
+        if (extTicket && (extStatus === "Closed" || extStatus === "Chased")) {
+          if (!loaded.find(t => t.number === extTicket)) {
+            const entry = { id: Date.now(), number: extTicket, status: extStatus, time: new Date().toISOString() };
+            updated = [entry, ...loaded];
+            return saveToGist(token, gist, updated).then(() => updated);
+          }
+        }
+        return updated;
+      })
+      .then(data => { setTickets(data); setSyncing(false); setLoading(false); })
+      .catch(() => { setSyncError("Could not load data from GitHub. Check your connection."); setSyncing(false); setLoading(false); });
   }, []);
 
   const toggleDark = () => {
@@ -93,15 +207,9 @@ function App() {
     try { localStorage.setItem("sn-darkmode", String(next)); } catch {}
   };
 
-  const handleZoom = (e) => {
-    const val = Number(e.target.value);
-    setZoom(val);
+  const handleZoom = e => {
+    const val = Number(e.target.value); setZoom(val);
     try { localStorage.setItem("sn-zoom", String(val)); } catch {}
-  };
-
-  const save = (updated) => {
-    setTickets(updated);
-    try { localStorage.setItem("sn-tickets", JSON.stringify(updated)); } catch {}
   };
 
   const showToast = (msg, color) => {
@@ -109,7 +217,19 @@ function App() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const addTicket = (status) => {
+  // Save to Gist and update state
+  const save = useCallback(async (updated) => {
+    setTickets(updated);
+    setSyncing(true); setSyncError("");
+    try {
+      await saveToGist(ghToken, ghGist, updated);
+    } catch {
+      setSyncError("Sync failed - changes may not be saved.");
+    }
+    setSyncing(false);
+  }, [ghToken, ghGist]);
+
+  const addTicket = status => {
     const num = input.trim().toUpperCase();
     if (!num) { setPendingStatus(status); return; }
     submitTicket(num, status);
@@ -122,30 +242,36 @@ function App() {
       showToast(`⚠️ ${num} already logged as ${existing.status}`, "#92400e");
       setInput(""); setPendingStatus(null); return;
     }
-    const entry = { id:Date.now(), number:num, status, time:new Date().toISOString() };
+    const entry = { id: Date.now(), number: num, status, time: new Date().toISOString() };
     save([entry, ...tickets]);
     setInput(""); setPendingStatus(null);
-    showToast(`✓ ${num} marked as ${status}`, status===STATUS.CLOSED ? C.closedBadge : C.chasedBadge);
+    showToast(`✓ ${num} marked as ${status}`, status === STATUS.CLOSED ? C.closedBadge : C.chasedBadge);
   };
 
-  const handleKey = (e) => {
-    if (e.key==="Enter" && pendingStatus) submitTicket(input.trim().toUpperCase(), pendingStatus);
-    else if (e.key==="Enter" && input.trim()) addTicket(pendingStatus||STATUS.CLOSED);
+  const handleKey = e => {
+    if (e.key === "Enter" && pendingStatus) submitTicket(input.trim().toUpperCase(), pendingStatus);
+    else if (e.key === "Enter" && input.trim()) addTicket(pendingStatus || STATUS.CLOSED);
   };
 
-  const removeTicket = (id) => save(tickets.filter(t => t.id !== id));
+  const removeTicket = id => save(tickets.filter(t => t.id !== id));
 
   const handleReset = () => {
     save([]); setShowReport(false); setShowResetConfirm(false);
     showToast("Tracker reset — clean slate!", C.red);
   };
 
-  const closed = tickets.filter(t => t.status===STATUS.CLOSED);
-  const chased = tickets.filter(t => t.status===STATUS.CHASED);
-  const filtered = filter==="All" ? tickets : tickets.filter(t => t.status===filter);
+  const handleDisconnect = () => {
+    localStorage.removeItem("sn-gh-token");
+    localStorage.removeItem("sn-gh-gist");
+    window.location.reload();
+  };
+
+  const closed   = tickets.filter(t => t.status === STATUS.CLOSED);
+  const chased   = tickets.filter(t => t.status === STATUS.CHASED);
+  const filtered = filter === "All" ? tickets : tickets.filter(t => t.status === filter);
 
   const reportText = () => {
-    const date = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+    const date      = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     const generated = formatDateTime(new Date().toISOString());
     let txt = `Daily Ticket Report – ${date}\n`;
     txt += `Generated        : ${generated}\n`;
@@ -153,22 +279,31 @@ function App() {
     txt += `Total Processed  : ${tickets.length}\n`;
     txt += `Closed           : ${closed.length}\n`;
     txt += `Chased           : ${chased.length}\n`;
-    if (closed.length) { txt+=`\nClosed Tickets:\n`; closed.forEach(t => txt+=`  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
-    if (chased.length) { txt+=`\nChased Tickets:\n`; chased.forEach(t => txt+=`  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
+    if (closed.length) { txt += `\nClosed Tickets:\n`; closed.forEach(t => txt += `  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
+    if (chased.length) { txt += `\nChased Tickets:\n`; chased.forEach(t => txt += `  • ${t.number.padEnd(16)} ${formatDateTime(t.time)}\n`); }
     return txt;
   };
 
-  const copyReport = () => { navigator.clipboard.writeText(reportText()); showToast("Report copied to clipboard!"); };
-  const exportTxt = () => {
-    const blob = new Blob([reportText()],{type:"text/plain"});
+  const copyReport  = () => { navigator.clipboard.writeText(reportText()); showToast("Report copied to clipboard!"); };
+  const exportTxt   = () => {
+    const blob = new Blob([reportText()], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `ticket-report-${new Date().toISOString().slice(0,10)}.txt`;
     a.click();
   };
 
+  // Setup screen
+  if (!loading && !setupDone) {
+    return <SetupScreen dark={dark} onComplete={(t, g, data) => {
+      setGhToken(t); setGhGist(g); setTickets(data); setSetupDone(true);
+    }} />;
+  }
+
   if (loading) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f4f4f4",color:"#666",fontSize:"16px",fontFamily:"'IBM Plex Sans',sans-serif"}}>Loading...</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f4f4f4",color:"#666",fontSize:"16px",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+      Loading...
+    </div>
   );
 
   return (
@@ -176,33 +311,34 @@ function App() {
 
       {/* Top bar */}
       <div style={{background:C.red, padding:"12px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px"}}>
-        {/* Left: title */}
         <div style={{display:"flex", alignItems:"center", gap:"12px", flexShrink:0}}>
           <span style={{color:"#fff", fontSize:"18px", fontWeight:"700"}}>Ticket Tracker</span>
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.3)"}}/>
           <span style={{color:"rgba(255,255,255,0.85)", fontSize:"13px"}}>IT Service Management</span>
         </div>
 
-        {/* Right: controls */}
         <div style={{display:"flex", alignItems:"center", gap:"20px"}}>
-
           {/* Zoom slider */}
           <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
             <span style={{fontSize:"12px", color:"rgba(255,255,255,0.7)", fontWeight:"500", whiteSpace:"nowrap"}}>A</span>
-            <input
-              type="range" min="50" max="200" step="5" value={zoom}
-              onChange={handleZoom}
-              style={{width:"80px", background:"rgba(255,255,255,0.25)", accentColor:"#fff"}}
-            />
+            <input type="range" min="50" max="200" step="5" value={zoom} onChange={handleZoom}
+              style={{width:"80px", background:"rgba(255,255,255,0.25)", accentColor:"#fff"}}/>
             <span style={{fontSize:"15px", color:"rgba(255,255,255,0.7)", fontWeight:"600", whiteSpace:"nowrap"}}>A</span>
             <span style={{fontSize:"11px", color:"rgba(255,255,255,0.5)", minWidth:"32px"}}>{zoom}%</span>
           </div>
 
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
 
+          {/* Sync status */}
+          <span style={{fontSize:"12px", color: syncing ? "rgba(255,255,255,0.6)" : syncError ? "#fca5a5" : "rgba(255,255,255,0.5)", whiteSpace:"nowrap"}}>
+            {syncing ? "Syncing..." : syncError ? "Sync error" : "Synced"}
+          </span>
+
+          <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
+
           {/* Dark mode toggle */}
           <div onClick={toggleDark} style={{display:"flex", alignItems:"center", gap:"8px", cursor:"pointer"}}>
-            <span style={{fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:"500"}}>{dark?"Dark":"Light"}</span>
+            <span style={{fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:"500"}}>{dark ? "Dark" : "Light"}</span>
             <div style={{width:"44px",height:"24px",borderRadius:"12px",background:dark?"rgba(255,255,255,0.9)":"rgba(0,0,0,0.25)",border:"1px solid rgba(255,255,255,0.4)",position:"relative",transition:"background 0.3s",cursor:"pointer"}}>
               <div style={{width:"18px",height:"18px",borderRadius:"50%",background:dark?"#d61726":"#ffffff",position:"absolute",top:"2px",left:dark?"22px":"2px",transition:"left 0.25s ease, background 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
             </div>
@@ -210,7 +346,6 @@ function App() {
 
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
 
-          {/* Reset */}
           <button onClick={() => setShowResetConfirm(true)}
             style={{background:"rgba(0,0,0,0.2)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",fontSize:"13px",padding:"7px 16px",borderRadius:"4px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif",flexShrink:0}}>
             Reset Day
@@ -231,7 +366,7 @@ function App() {
           <div style={{background:C.card,borderRadius:"4px",padding:"32px",maxWidth:"420px",width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
             <h2 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"8px"}}>Reset Tracker?</h2>
             <div style={{width:"40px",height:"3px",background:C.red,marginBottom:"16px"}}/>
-            <p style={{color:C.textSub,fontSize:"15px",marginBottom:"24px"}}>This will permanently clear all {tickets.length} ticket{tickets.length!==1?"s":""}. This cannot be undone.</p>
+            <p style={{color:C.textSub,fontSize:"15px",marginBottom:"24px"}}>This will permanently clear all {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} from all browsers. This cannot be undone.</p>
             <div style={{display:"flex",gap:"12px"}}>
               <button onClick={() => setShowResetConfirm(false)}
                 style={{flex:1,background:C.border,color:C.text,border:"none",borderRadius:"4px",padding:"12px",fontSize:"15px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>Cancel</button>
@@ -246,19 +381,29 @@ function App() {
       <div style={{transformOrigin:"top center", transform:`scale(${scale})`, transition:"transform 0.2s"}}>
         <div style={{maxWidth:"720px", margin:"0 auto", padding:"32px 20px"}}>
 
-          {/* Date */}
-          <div style={{marginBottom:"28px"}}>
+          <div style={{marginBottom:"28px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <p style={{color:C.textSub, fontSize:"14px"}}>
               {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
             </p>
+            <button onClick={handleDisconnect}
+              style={{background:"none",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"5px 12px",fontSize:"12px",color:C.textSub,cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+              Disconnect GitHub
+            </button>
           </div>
+
+          {/* Sync error banner */}
+          {syncError && (
+            <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:"4px",padding:"12px 16px",marginBottom:"16px",fontSize:"13px",color:"#991b1b"}}>
+              {syncError}
+            </div>
+          )}
 
           {/* Stats */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"16px",marginBottom:"20px"}}>
             {[
-              {label:"Total Processed",count:tickets.length,accent:C.text},
-              {label:"Closed",count:closed.length,accent:C.closedBadge},
-              {label:"Chased",count:chased.length,accent:C.chasedBadge},
+              {label:"Total Processed", count:tickets.length, accent:C.text},
+              {label:"Closed",          count:closed.length,  accent:C.closedBadge},
+              {label:"Chased",          count:chased.length,  accent:C.chasedBadge},
             ].map(s => (
               <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${s.accent}`,borderRadius:"4px",padding:"20px",textAlign:"center",transition:"background 0.2s"}}>
                 <div style={{fontSize:"40px",fontWeight:"700",color:s.accent,lineHeight:1}}>{s.count}</div>
@@ -276,19 +421,19 @@ function App() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
-              onFocus={e => e.target.style.borderColor=C.red}
-              onBlur={e => e.target.style.borderColor=C.border}
+              onFocus={e => e.target.style.borderColor = C.red}
+              onBlur={e => e.target.style.borderColor = C.border}
             />
             {pendingStatus && !input.trim() && (
               <p style={{fontSize:"13px",color:"#b45309",marginBottom:"12px",fontWeight:"500"}}>⚠️ Enter a ticket number above, then click the button again</p>
             )}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-              <button onClick={() => addTicket(STATUS.CLOSED)}
-                style={{background:C.closedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+              <button onClick={() => addTicket(STATUS.CLOSED)} disabled={syncing}
+                style={{background:C.closedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:syncing?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:syncing?0.7:1}}>
                 Mark as Closed
               </button>
-              <button onClick={() => addTicket(STATUS.CHASED)}
-                style={{background:C.chasedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+              <button onClick={() => addTicket(STATUS.CHASED)} disabled={syncing}
+                style={{background:C.chasedBadge,color:"#fff",border:"none",borderRadius:"4px",padding:"13px",fontSize:"15px",fontWeight:"600",cursor:syncing?"not-allowed":"pointer",fontFamily:"'IBM Plex Sans',sans-serif",opacity:syncing?0.7:1}}>
                 Mark as Chased
               </button>
             </div>
@@ -306,11 +451,11 @@ function App() {
                     </button>
                   ))}
                 </div>
-                <span style={{fontSize:"13px",color:C.textSub}}>{filtered.length} ticket{filtered.length!==1?"s":""}</span>
+                <span style={{fontSize:"13px",color:C.textSub}}>{filtered.length} ticket{filtered.length !== 1 ? "s" : ""}</span>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:"8px",maxHeight:"320px",overflowY:"auto"}}>
                 {filtered.map(t => {
-                  const isC = t.status===STATUS.CLOSED;
+                  const isC = t.status === STATUS.CLOSED;
                   return (
                     <div key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:isC?C.closedBg:C.chasedBg,border:`1px solid ${isC?C.closedBorder:C.chasedBorder}`,borderRadius:"4px",padding:"12px 14px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
@@ -321,8 +466,8 @@ function App() {
                         <span style={{fontSize:"12px",color:C.textSub}}>{formatDateTime(t.time)}</span>
                         <button onClick={() => removeTicket(t.id)}
                           style={{background:"none",border:"none",color:C.border,cursor:"pointer",fontSize:"16px",padding:"0 2px",lineHeight:1}}
-                          onMouseEnter={e => e.target.style.color=C.red}
-                          onMouseLeave={e => e.target.style.color=C.border}>✕</button>
+                          onMouseEnter={e => e.target.style.color = C.red}
+                          onMouseLeave={e => e.target.style.color = C.border}>✕</button>
                       </div>
                     </div>
                   );
@@ -342,7 +487,7 @@ function App() {
                 <div style={{display:"flex",gap:"8px"}}>
                   <button onClick={() => setShowReport(!showReport)}
                     style={{background:C.bg,color:C.textSub,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"7px 14px",fontSize:"13px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>
-                    {showReport?"Hide":"Preview"}
+                    {showReport ? "Hide" : "Preview"}
                   </button>
                   <button onClick={copyReport}
                     style={{background:C.bg,color:C.text,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"7px 14px",fontSize:"13px",cursor:"pointer",fontWeight:"500",fontFamily:"'IBM Plex Sans',sans-serif"}}>
