@@ -72,10 +72,49 @@ const { useEffect, useMemo, useRef, useState, useCallback } = React;
 const DEFAULT_SB_URL = "https://gehrxompqjktnhubfwbu.supabase.co";
 const DEFAULT_SB_KEY = "sb_publishable_8Tw2qXfWLhld8zmx4lphRA_GIH_7ZfN";
 
+// Capture extension parameters (ticket/status) if present
+storePendingFromUrl();
+
 // localStorage keys
 const LS_URL = "sn-sb-url";
 const LS_KEY = "sn-sb-key";
 const LS_TK  = "sn-sb-tracker";
+
+function getUrlParams(){
+  const u = new URL(window.location.href);
+  return {
+    ticket: (u.searchParams.get("ticket") || "").trim().toUpperCase(),
+    status: (u.searchParams.get("status") || "").trim()
+  };
+}
+
+function normalizeStatus(s){
+  const v = String(s||"").toLowerCase();
+  if (v === "closed" || v === "close") return "Closed";
+  if (v === "chased" || v === "chase") return "Chased";
+  return "";
+}
+
+// If extension opens the tracker with ?ticket=INC...&status=Closed, store it until we are connected.
+function storePendingFromUrl(){
+  const p = getUrlParams();
+  const status = normalizeStatus(p.status);
+  if (!p.ticket || !status) return;
+  sessionStorage.setItem("sn-pending-ticket", JSON.stringify({ ticket: p.ticket, status, at: Date.now() }));
+}
+
+function consumePending(){
+  try{
+    const raw = sessionStorage.getItem("sn-pending-ticket");
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    sessionStorage.removeItem("sn-pending-ticket");
+    return obj;
+  }catch{
+    sessionStorage.removeItem("sn-pending-ticket");
+    return null;
+  }
+}
 
 function utcDateISO() { return new Date().toISOString().slice(0,10); }
 function nowISO() { return new Date().toISOString(); }
@@ -151,6 +190,9 @@ function SetupScreen({ onConnected }){
   const [trackerKey, setTrackerKey] = useState(localStorage.getItem(LS_TK) || "default");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [pendingPreview] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("sn-pending-ticket") || "null"); } catch { return null; }
+  });
 
   const connect = async () => {
     setErr("");
@@ -186,6 +228,11 @@ function SetupScreen({ onConnected }){
           Supabase dashboard - Settings - Data API (Project URL) and Settings - API Keys (Publishable key).
           <br/>Do not use secret keys in the website.
         </div>
+        {pendingPreview && pendingPreview.ticket && pendingPreview.status && (
+          <div style={{marginTop:12}} className="pill">
+            Pending from extension: <span className="code">{pendingPreview.ticket}</span> ({pendingPreview.status})
+          </div>
+        )}
 
         <label className="label">Supabase Project URL</label>
         <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxx.supabase.co" />
@@ -212,6 +259,9 @@ function SetupScreen({ onConnected }){
 }
 
 function App(){
+  // If the extension opened this page with params, we stored them in sessionStorage already.
+  // Nothing else needed here.
+
   const [cfg, setCfg] = useState(()=>{
     const url = localStorage.getItem(LS_URL);
     const key = localStorage.getItem(LS_KEY);
@@ -256,7 +306,21 @@ function App(){
     }
   }, [cfg]);
 
-  useEffect(()=>{ if(cfg) refresh(); }, [cfg, refresh]);
+  useEffect(()=>{ 
+    if(cfg) {
+      refresh().then(async ()=>{
+        const pending = consumePending();
+        if (pending && pending.ticket && pending.status) {
+          try{
+            await insertTicket(cfg, pending.ticket, pending.status);
+          }catch(e){
+            // If insert fails, keep going
+          }
+          await refresh();
+        }
+      });
+    }
+  }, [cfg, refresh]);
 
   useEffect(()=>{
     if(!cfg) return;
