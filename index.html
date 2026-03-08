@@ -120,6 +120,10 @@ async function sbDeleteToday(cfg) {
   return sbFetch("DELETE", `/rest/v1/tickets?work_date=eq.${d}`, cfg);
 }
 
+async function sbDeleteById(id, cfg) {
+  return sbFetch("DELETE", `/rest/v1/tickets?id=eq.${id}`, cfg);
+}
+
 function mapRowsToTickets(rows) {
   return (rows || []).map(r => ({
     id: r.id || Date.now(),
@@ -276,7 +280,20 @@ function App() {
     else if (e.key==="Enter" && input.trim()) addTicket(pendingStatus||STATUS.CLOSED);
   };
 
-  const removeTicket = (id) => save(tickets.filter(t => t.id !== id));
+  const removeTicket = async (id) => {
+    save(tickets.filter(t => t.id !== id));
+    try {
+      const cfg = getSbCfg();
+      await sbDeleteById(id, cfg);
+    } catch (e) {
+      showToast("Delete failed (Supabase).", C.red);
+      try {
+        const cfg = getSbCfg();
+        const rows = await sbLoadToday(cfg);
+        setTickets(mapRowsToTickets(rows || []));
+      } catch {}
+    }
+  };
 
   const handleReset = () => {
     save([]); setShowReport(false); setShowResetConfirm(false);
