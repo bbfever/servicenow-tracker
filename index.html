@@ -22,7 +22,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect } = React;
+const { useState, useEffect, useCallback } = React;
 const STATUS = { CLOSED: "Closed", CHASED: "Chased" };
 
 const LIGHT = {
@@ -144,9 +144,34 @@ function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [dark, setDark] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [readyToClose, setReadyToClose] = useState([]);
 
   const C = dark ? DARK : LIGHT;
   const scale = zoom / 100;
+
+  const loadReadyQueue = useCallback(async () => {
+    try {
+      const cfg = getSbCfg();
+      const threshold = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      const encoded = encodeURIComponent(threshold);
+      const orFilter = `(created_at.lte.${encoded},work_date.lte.${encoded})`;
+      const chasedRows = await sbFetch("GET", `/rest/v1/tickets?status=eq.${STATUS.CHASED}&or=${orFilter}&select=ticket_number`, cfg);
+      const closedRows = await sbFetch("GET", `/rest/v1/tickets?status=eq.${STATUS.CLOSED}&select=ticket_number`, cfg);
+      const closedSet = new Set((closedRows || []).map(r => String(r.ticket_number || "").toUpperCase()));
+      const queue = [];
+      const seen = new Set();
+      (chasedRows || []).forEach(row => {
+        const number = String(row.ticket_number || "").toUpperCase();
+        if (!number || closedSet.has(number) || seen.has(number)) return;
+        seen.add(number);
+        queue.push(number);
+      });
+      setReadyToClose(queue);
+    } catch (e) {
+      console.error(e);
+      setReadyToClose([]);
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -158,13 +183,14 @@ function App() {
         const cfg = getSbCfg();
         const rows = await sbLoadToday(cfg);
         setTickets(mapRowsToTickets(rows || []));
+        await loadReadyQueue();
       } catch (e) {
         // fall back to empty list; user can still use UI
         console.error(e);
       }
       setLoading(false);
     })();
-  }, []);
+  }, [loadReadyQueue]);
 
   useEffect(() => {
     if (loading) return;
@@ -173,10 +199,11 @@ function App() {
         const cfg = getSbCfg();
         const rows = await sbLoadToday(cfg);
         setTickets(mapRowsToTickets(rows || []));
+        await loadReadyQueue();
       } catch {}
     }, 30000);
     return () => clearInterval(id);
-  }, [loading]);
+  }, [loading, loadReadyQueue]);
 
   const toggleDark = () => {
     const next = !dark; setDark(next);
@@ -227,6 +254,21 @@ function App() {
         showToast("Sync failed (Supabase).", "#d61726");
       }
     })();
+  };
+
+  const markReadyTicketClosed = async (ticketNumber) => {
+    if (!ticketNumber) return;
+    try {
+      const cfg = getSbCfg();
+      await sbInsert(ticketNumber, STATUS.CLOSED, cfg);
+      const rows = await sbLoadToday(cfg);
+      setTickets(mapRowsToTickets(rows || []));
+      await loadReadyQueue();
+      showToast(`âœ“ ${ticketNumber} marked as Closed`, C.closedBadge);
+    } catch (e) {
+      console.error(e);
+      showToast("Sync failed (Supabase).", "#d61726");
+    }
   };
 
   const handleKey = (e) => {
@@ -407,6 +449,32 @@ function App() {
                 Mark as Chased
               </button>
             </div>
+          </div>
+
+          {/* Tickets Ready To Close */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",marginBottom:"16px",transition:"background 0.2s"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
+              <div>
+                <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700",fontFamily:"'Fira Sans',sans-serif",margin:0}}>Tickets Ready To Close</h2>
+                <div style={{width:"32px",height:"2px",background:C.red,marginTop:"4px"}}/>
+              </div>
+              <span style={{fontSize:"12px",color:C.textSub}}>{readyToClose.length} eligible ticket{readyToClose.length!==1?"s":""}</span>
+            </div>
+            {readyToClose.length === 0 ? (
+              <p style={{color:C.textSub,fontSize:"14px",margin:0}}>No tickets ready to close yet.</p>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                {readyToClose.map(ticket => (
+                  <div key={ticket} style={{display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"10px 12px"}}>
+                    <span style={{fontFamily:"'IBM Plex Sans',monospace",fontWeight:"700",fontSize:"15px",color:C.chasedText}}>{ticket}</span>
+                    <button onClick={() => markReadyTicketClosed(ticket)}
+                      style={{background:C.closedBadge,color:"#fff",border:"none",borderRadius:"3px",padding:"6px 12px",fontSize:"13px",fontWeight:"600",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
+                      [Mark Closed]
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Ticket List */}
