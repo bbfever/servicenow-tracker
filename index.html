@@ -129,32 +129,6 @@ function mapRowsToTickets(rows) {
   }));
 }
 
-// --- Extension auto-feed (?ticket=INC...&status=Closed|Chased) ---
-function getUrlFeed() {
-  try {
-    const u = new URL(window.location.href);
-    const ticket = (u.searchParams.get("ticket") || "").trim().toUpperCase();
-    const statusRaw = (u.searchParams.get("status") || "").trim();
-    const s = statusRaw.toLowerCase();
-    const status = (s === "closed" || s === "close") ? "Closed" : (s === "chased" || s === "chase") ? "Chased" : "";
-    if (!ticket || !status) return null;
-    return { ticket, status };
-  } catch {
-    return null;
-  }
-}
-
-function clearUrlFeed() {
-  try {
-    const u = new URL(window.location.href);
-    if (u.searchParams.has("ticket") || u.searchParams.has("status")) {
-      u.searchParams.delete("ticket");
-      u.searchParams.delete("status");
-      window.history.replaceState({}, document.title, u.toString());
-    }
-  } catch {}
-}
-
 function formatDateTime(iso) {
   return new Date(iso).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
 }
@@ -184,15 +158,6 @@ function App() {
         const cfg = getSbCfg();
         const rows = await sbLoadToday(cfg);
         setTickets(mapRowsToTickets(rows || []));
-
-        // If opened by extension with ?ticket=...&status=..., auto-insert once
-        const feed = getUrlFeed();
-        if (feed) {
-          try { await sbInsert(feed.ticket, feed.status, cfg); } catch {}
-          const rows2 = await sbLoadToday(cfg);
-          setTickets(mapRowsToTickets(rows2 || []));
-          clearUrlFeed();
-        }
       } catch (e) {
         // fall back to empty list; user can still use UI
         console.error(e);
