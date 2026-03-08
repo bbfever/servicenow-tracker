@@ -73,6 +73,9 @@ async function sbFetch(method, path, cfg, body) {
     "Authorization":"Bearer " + cfg.key,
     "x-tracker-key": cfg.trackerKey
   };
+  if (method === "DELETE") {
+    headers["Prefer"] = "return=representation";
+  }
 
   const res = await fetch(url, {
     method,
@@ -281,17 +284,16 @@ function App() {
   };
 
   const removeTicket = async (id) => {
-    save(tickets.filter(t => t.id !== id));
     try {
       const cfg = getSbCfg();
-      await sbDeleteById(id, cfg);
+      const deleted = await sbDeleteById(id, cfg);
+      if (deleted && deleted.length > 0) {
+        save(tickets.filter(t => t.id !== id));
+      } else {
+        showToast("Delete had no effect — check Supabase RLS policies.", C.red);
+      }
     } catch (e) {
       showToast("Delete failed (Supabase).", C.red);
-      try {
-        const cfg = getSbCfg();
-        const rows = await sbLoadToday(cfg);
-        setTickets(mapRowsToTickets(rows || []));
-      } catch {}
     }
   };
 
