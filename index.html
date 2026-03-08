@@ -334,7 +334,7 @@ function App() {
       {/* Top bar */}
       <div style={{background:C.red, padding:"12px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px"}}>
         {/* Left: title */}
-        <div style={{display:"flex", alignItems:"center", gap:"12px", flexShrink:0}}>
+        <div style={{display:"flex", alignItems:"center", gap:"12px", flexShrink:0, userSelect:"none"}}>
           <span style={{color:"#fff", fontSize:"18px", fontWeight:"700", fontFamily:"'Fira Sans',sans-serif"}}>Ticket Tracker</span>
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.3)"}}/>
           <span style={{color:"rgba(255,255,255,0.85)", fontSize:"13px"}}>IT Service Management</span>
@@ -344,7 +344,7 @@ function App() {
         <div style={{display:"flex", alignItems:"center", gap:"20px"}}>
 
           {/* Zoom slider */}
-          <div style={{display:"flex", alignItems:"center", gap:"8px"}}>
+          <div style={{display:"flex", alignItems:"center", gap:"8px", userSelect:"none"}}>
             <span style={{fontSize:"12px", color:"rgba(255,255,255,0.7)", fontWeight:"500", whiteSpace:"nowrap"}}>A</span>
             <input
               type="range" min="80" max="130" step="5" value={zoom}
@@ -358,7 +358,7 @@ function App() {
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.25)"}}/>
 
           {/* Dark mode toggle */}
-          <div onClick={toggleDark} style={{display:"flex", alignItems:"center", gap:"8px", cursor:"pointer"}}>
+          <div onClick={toggleDark} style={{display:"flex", alignItems:"center", gap:"8px", cursor:"pointer", userSelect:"none"}}>
             <span style={{fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:"500"}}>{dark?"Dark":"Light"}</span>
             <div style={{width:"44px",height:"24px",borderRadius:"12px",background:dark?"rgba(255,255,255,0.9)":"rgba(0,0,0,0.25)",border:"1px solid rgba(255,255,255,0.4)",position:"relative",transition:"background 0.3s",cursor:"pointer"}}>
               <div style={{width:"18px",height:"18px",borderRadius:"50%",background:dark?"#d61726":"#ffffff",position:"absolute",top:"2px",left:dark?"22px":"2px",transition:"left 0.25s ease, background 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
@@ -405,7 +405,7 @@ function App() {
 
           {/* Date */}
           <div style={{marginBottom:"28px"}}>
-            <p style={{color:C.textSub, fontSize:"14px"}}>
+            <p style={{color:C.textSub, fontSize:"14px",userSelect:"none"}}>
               {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
             </p>
           </div>
@@ -417,7 +417,7 @@ function App() {
               {label:"Closed",count:closed.length,accent:C.closedBadge},
               {label:"Chased",count:chased.length,accent:C.chasedBadge},
             ].map(s => (
-              <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${s.accent}`,borderRadius:"4px",padding:"20px",textAlign:"center",transition:"background 0.2s"}}>
+              <div key={s.label} style={{background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${s.accent}`,borderRadius:"4px",padding:"20px",textAlign:"center",transition:"background 0.2s",userSelect:"none"}}>
                 <div style={{fontSize:"40px",fontWeight:"700",color:s.accent,lineHeight:1}}>{s.count}</div>
                 <div style={{fontSize:"12px",color:C.textSub,marginTop:"6px",fontWeight:"500"}}>{s.label}</div>
               </div>
@@ -453,7 +453,7 @@ function App() {
 
           {/* Tickets Ready To Close */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",marginBottom:"16px",transition:"background 0.2s"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px",userSelect:"none"}}>
               <div>
                 <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700",fontFamily:"'Fira Sans',sans-serif",margin:0}}>Tickets Ready To Close</h2>
                 <div style={{width:"32px",height:"2px",background:C.red,marginTop:"4px"}}/>
@@ -465,7 +465,7 @@ function App() {
             ) : (
               <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
                 {readyToClose.map(ticket => (
-                  <div key={ticket} style={{display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"10px 12px"}}>
+                  <div key={ticket} style={{display:"flex",alignItems:"center",justifyContent:"space-between",border:`1px solid ${C.border}`,borderRadius:"4px",padding:"10px 12px",userSelect:"none"}}>
                     <span style={{fontFamily:"'IBM Plex Sans',monospace",fontWeight:"700",fontSize:"15px",color:C.chasedText}}>{ticket}</span>
                     <button onClick={() => markReadyTicketClosed(ticket)}
                       style={{background:C.closedBadge,color:"#fff",border:"none",borderRadius:"3px",padding:"6px 12px",fontSize:"13px",fontWeight:"600",cursor:"pointer",fontFamily:"'IBM Plex Sans',sans-serif"}}>
@@ -480,7 +480,7 @@ function App() {
           {/* Ticket List */}
           {tickets.length > 0 && (
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",marginBottom:"16px",transition:"background 0.2s"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px",userSelect:"none"}}>
                 <div style={{display:"flex",gap:"8px"}}>
                   {["All","Closed","Chased"].map(f => (
                     <button key={f} onClick={() => setFilter(f)}
@@ -495,7 +495,7 @@ function App() {
                 {filtered.map(t => {
                   const isC = t.status===STATUS.CLOSED;
                   return (
-                    <div key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:isC?C.closedBg:C.chasedBg,border:`1px solid ${isC?C.closedBorder:C.chasedBorder}`,borderRadius:"4px",padding:"12px 14px"}}>
+                    <div key={t.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:isC?C.closedBg:C.chasedBg,border:`1px solid ${isC?C.closedBorder:C.chasedBorder}`,borderRadius:"4px",padding:"12px 14px",userSelect:"none"}}>
                       <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
                         <span style={{background:isC?C.closedBadge:C.chasedBadge,color:"#fff",fontSize:"11px",fontWeight:"700",padding:"3px 10px",borderRadius:"3px",textTransform:"uppercase",letterSpacing:"0.5px"}}>{t.status}</span>
                         <span style={{fontFamily:"monospace",fontWeight:"700",fontSize:"15px",color:isC?C.closedText:C.chasedText}}>{t.number}</span>
@@ -517,7 +517,7 @@ function App() {
           {/* Report */}
           {tickets.length > 0 && (
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",transition:"background 0.2s"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px",userSelect:"none"}}>
                 <div>
                   <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700",fontFamily:"'Fira Sans',sans-serif"}}>End of Day Report</h2>
                   <div style={{width:"32px",height:"2px",background:C.red,marginTop:"4px"}}/>
@@ -546,12 +546,12 @@ function App() {
           )}
 
           {tickets.length === 0 && (
-            <div style={{textAlign:"center",color:C.textSub,fontSize:"15px",padding:"60px 0",background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px"}}>
+            <div style={{textAlign:"center",color:C.textSub,fontSize:"15px",padding:"60px 0",background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",userSelect:"none"}}>
               No tickets logged yet — add your first one above.
             </div>
           )}
 
-          <div style={{textAlign:"center",marginTop:"24px",paddingTop:"16px",borderTop:`1px solid ${C.border}`}}>
+          <div style={{textAlign:"center",marginTop:"24px",paddingTop:"16px",borderTop:`1px solid ${C.border}`,userSelect:"none"}}>
             <span style={{fontSize:"12px",color:C.footerText}}>IT Service Management — Ticket Tracker</span>
           </div>
 
