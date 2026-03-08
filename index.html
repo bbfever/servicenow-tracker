@@ -4,13 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Ticket Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif}
+h1,h2,h3,h4,h5,h6{font-family:'Fira Sans',sans-serif}
 input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer}
 input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;border:none}
@@ -325,7 +328,7 @@ function App() {
       <div style={{background:C.red, padding:"12px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px"}}>
         {/* Left: title */}
         <div style={{display:"flex", alignItems:"center", gap:"12px", flexShrink:0}}>
-          <span style={{color:"#fff", fontSize:"18px", fontWeight:"700"}}>Ticket Tracker</span>
+          <span style={{color:"#fff", fontSize:"18px", fontWeight:"700", fontFamily:"'Fira Sans',sans-serif"}}>Ticket Tracker</span>
           <div style={{width:"1px", height:"20px", background:"rgba(255,255,255,0.3)"}}/>
           <span style={{color:"rgba(255,255,255,0.85)", fontSize:"13px"}}>IT Service Management</span>
         </div>
@@ -376,7 +379,7 @@ function App() {
       {showResetConfirm && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
           <div style={{background:C.card,borderRadius:"4px",padding:"32px",maxWidth:"420px",width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
-            <h2 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"8px"}}>Reset Tracker?</h2>
+            <h2 style={{color:C.text,fontSize:"20px",fontWeight:"700",marginBottom:"8px",fontFamily:"'Fira Sans',sans-serif"}}>Reset Tracker?</h2>
             <div style={{width:"40px",height:"3px",background:C.red,marginBottom:"16px"}}/>
             <p style={{color:C.textSub,fontSize:"15px",marginBottom:"24px"}}>This will permanently clear all {tickets.length} ticket{tickets.length!==1?"s":""}. This cannot be undone.</p>
             <div style={{display:"flex",gap:"12px"}}>
@@ -483,7 +486,7 @@ function App() {
             <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"4px",padding:"24px",transition:"background 0.2s"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
                 <div>
-                  <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700"}}>End of Day Report</h2>
+                  <h2 style={{color:C.text,fontSize:"15px",fontWeight:"700",fontFamily:"'Fira Sans',sans-serif"}}>End of Day Report</h2>
                   <div style={{width:"32px",height:"2px",background:C.red,marginTop:"4px"}}/>
                 </div>
                 <div style={{display:"flex",gap:"8px"}}>
